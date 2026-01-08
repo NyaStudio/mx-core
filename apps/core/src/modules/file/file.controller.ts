@@ -95,11 +95,28 @@ export class FileController {
     const ext = path.extname(file.filename)
     const filename = customAlphabet(alphabet)(18) + ext.toLowerCase()
 
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']
+    const isImage = imageExtensions.includes(ext.toLowerCase())
+
+    if (isImage && type === 'image') {
+      const buffer = await this.uploadService.getFileBuffer(file.file)
+      const s3Url = await this.service.uploadImageToS3(filename, buffer)
+
+      if (s3Url) {
+        return {
+          url: s3Url,
+          name: filename,
+          storage: 's3',
+        }
+      }
+    }
+
     await this.service.writeFile(type, filename, file.file)
 
     return {
       url: await this.service.resolveFileUrl(type, filename),
       name: filename,
+      storage: 'local',
     }
   }
 

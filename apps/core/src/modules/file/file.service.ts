@@ -13,6 +13,8 @@ import {
   STATIC_FILE_DIR,
   STATIC_FILE_TRASH_DIR,
 } from '~/constants/path.constant'
+import { parsePlaceholder } from '~/utils/path-placeholder.util'
+import { S3Uploader } from '~/utils/s3.util'
 import { ConfigsService } from '../configs/configs.service'
 import type { FileType } from './file.type'
 
@@ -21,6 +23,84 @@ export class FileService {
   private readonly logger: Logger
   constructor(private readonly configService: ConfigsService) {
     this.logger = new Logger(FileService.name)
+  }
+
+  async uploadImageToS3(
+    filename: string,
+    buffer: Buffer,
+  ): Promise<string | null> {
+    const { imageBedOptions, s3Options } =
+      await this.configService.waitForConfigReady()
+
+    if (!imageBedOptions?.enable) {
+      return null
+    }
+
+    const { endpoint, bucket, region, accessKeyId, secretAccessKey } =
+      s3Options || {}
+    if (!endpoint || !bucket || !region || !accessKeyId || !secretAccessKey) {
+      this.logger.warn('S3 配置不完整，无法上传图片到 S3')
+      return null
+    }
+
+    const ext = path.extname(filename).slice(1).toLowerCase()
+    const allowedFormats = imageBedOptions.allowedFormats
+      ?.split(',')
+      .map((f) => f.trim().toLowerCase())
+    if (allowedFormats && !allowedFormats.includes(ext)) {
+      throw new BadRequestException(
+        `不支持的图片格式: ${ext}，允许的格式: ${imageBedOptions.allowedFormats}`,
+      )
+    }
+
+    const maxSizeMB = imageBedOptions.maxSizeMB || 10
+    const maxSizeBytes = maxSizeMB * 1024 * 1024
+    if (buffer.length > maxSizeBytes) {
+      throw new BadRequestException(
+        `图片文件过大: ${(buffer.length / 1024 / 1024).toFixed(2)}MB，最大允许: ${maxSizeMB}MB`,
+      )
+    }
+
+    const s3 = new S3Uploader({
+      bucket,
+      region,
+      accessKey: accessKeyId,
+      secretKey: secretAccessKey,
+      endpoint,
+    })
+
+    if (s3Options.customDomain) {
+      s3.setCustomDomain(s3Options.customDomain)
+    }
+
+    const pathTemplate = imageBedOptions.path || 'images/{Y}/{m}/{uuid}.{ext}'
+    const remotePath = parsePlaceholder(pathTemplate, {
+      filename,
+    })
+
+    try {
+      this.logger.log(`Uploaded to S3: ${remotePath}`)
+
+      const mimeTypes: Record<string, string> = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        gif: 'image/gif',
+        webp: 'image/webp',
+        svg: 'image/svg+xml',
+      }
+      const contentType = mimeTypes[ext] || 'application/octet-stream'
+
+      await s3.uploadToS3(remotePath, buffer, contentType)
+
+      const baseUrl = s3Options.customDomain || endpoint
+      return `${baseUrl.replace(/\/+$/, '')}/${remotePath}`
+    } catch (error) {
+      this.logger.error('Failed to upload to s3', error)
+      throw new InternalServerErrorException(
+        `上传图片到 S3 失败: ${error.message}`,
+      )
+    }
   }
 
   private resolveFilePath(type: FileType, name: string) {
