@@ -13,7 +13,7 @@ export function getAvatar(mail: string | undefined) {
   if (!mail) {
     return ''
   }
-  return `https://cravatar.cn/avatar/${md5(mail)}?d=retro`
+  return `https://avatar.xcnya.cn/avatar/${md5(mail)}?d=retro`
 }
 
 export function sleep(ms: number) {
