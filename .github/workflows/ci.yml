@@ -1,40 +1,94 @@
 on:
   push:
-    tags-ignore:
-      - 'v*'
-    paths-ignore:
-      - CHANGELOG.MD
     branches:
       - master
-  pull_request:
   workflow_dispatch:
-name: CI
+
+name: Release (core)
 
 jobs:
+  build:
+    name: Main Build
+    runs-on: ubuntu-24.04
+    env:
+      REDISMS_DISABLE_POSTINSTALL: 1
+      MONGOMS_DISABLE_POSTINSTALL: 1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.12.1
+        with:
+          mongodb-version: 4.4
+      - name: Start Redis
+        uses: supercharge/redis-github-action@1.8.0
+        with:
+          redis-version: 6
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.1.0
+        with:
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-pnpm-modules
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+      - name: Install Dependencies
+        run: |
+          pnpm i
+
+      - name: Build project
+        run: |
+          pnpm run bundle
+      - name: Test Bundle Server
+        run: |
+          bash scripts/workflow/test-server.sh
+      - name: Zip Assets
+        run: |
+          sh apps/core/zip-asset.sh
+
   docker:
-    name: Docker build
-    runs-on: ubuntu-latest
+    name: Docker Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        arch: [amd64]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Docker Setup QEMU
+        uses: docker/setup-qemu-action@v3.6.0
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: |
-            innei/mx-server
+            blxcwg666/mx-server
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
-            type=raw,value=latest
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
       - name: Copy .env
         run: |
           cp .env.example .env
@@ -44,7 +98,7 @@ jobs:
           context: .
           load: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: ${{ steps.meta.outputs.labels }},blxcwg666/mx-server:latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Test
@@ -52,42 +106,20 @@ jobs:
           bash ./scripts/workflow/test-docker.sh
           sudo rm -rf ./data
 
-  core:
-    name: Build (Core)
-    runs-on: ubuntu-latest
-    env:
-      REDISMS_DISABLE_POSTINSTALL: 1
-      MONGOMS_DISABLE_POSTINSTALL: 1
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js and pnpm
-        uses: ./.github/actions/setup-node
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
         with:
-          node-version: '22.x'
-      - name: Build project
-        run: npm run bundle
-      - name: Setup MongoDB and Redis
-        uses: ./.github/actions/setup-databases
-      - name: Test Bundle Server
-        run: bash scripts/workflow/test-server.sh
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  test:
-    name: Test
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js and pnpm
-        uses: ./.github/actions/setup-node
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v6
         with:
-          node-version: '22.x'
-      - name: Setup MongoDB and Redis
-        uses: ./.github/actions/setup-databases
-      - name: Run Lint
-        run: npm run lint
-      - name: Run Tests
-        run: npm run test
-        env:
-          CI: true
+          context: .
+          push: true
+          platforms: |
+            linux/amd64
+            linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
