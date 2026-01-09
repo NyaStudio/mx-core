@@ -98,7 +98,7 @@ export class FileController {
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']
     const isImage = imageExtensions.includes(ext.toLowerCase())
 
-    if (isImage) {
+    if (isImage && type === 'photo') {
       const buffer = await this.uploadService.getFileBuffer(file.file)
       const s3Url = await this.service.uploadImageToS3(filename, buffer)
 

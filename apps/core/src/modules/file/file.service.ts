@@ -79,8 +79,6 @@ export class FileService {
     })
 
     try {
-      this.logger.log(`Uploaded to S3: ${remotePath}`)
-
       const mimeTypes: Record<string, string> = {
         jpg: 'image/jpeg',
         jpeg: 'image/jpeg',
@@ -91,7 +89,9 @@ export class FileService {
       }
       const contentType = mimeTypes[ext] || 'application/octet-stream'
 
+      this.logger.log(`Uploading to S3: ${remotePath}`)
       await s3.uploadToS3(remotePath, buffer, contentType)
+      this.logger.log(`Successfully uploaded to S3: ${remotePath}`)
 
       const baseUrl = s3Options.customDomain || endpoint
       return `${baseUrl.replace(/\/+$/, '')}/${remotePath}`
