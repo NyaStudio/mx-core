@@ -31,8 +31,10 @@ WORKDIR /app
 COPY --from=builder /app/out .
 COPY --from=builder /app/assets ./assets
 
+RUN corepack enable && corepack install -g pnpm@10.10.0
+RUN pnpm install --frozen-lockfile=false
+
 RUN npm i sharp -g
-RUN npm i sharp
 
 COPY docker-entrypoint.sh .
 RUN chmod +x docker-entrypoint.sh
