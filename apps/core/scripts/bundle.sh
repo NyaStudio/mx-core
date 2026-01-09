@@ -7,12 +7,7 @@ export PATH="$(pwd)/node_modules/.bin:$(pwd)/../../node_modules/.bin:$PATH"
 rimraf out
 npm run build
 
-# Check if RELEASE environment variable is set to true
-if [ "$RELEASE" = "true" ]; then
-  ncc build dist/src/main.js -o $(pwd)/out --minify -s
-else
-  ncc build dist/src/main.js -o $(pwd)/out -s
-fi
+# Copy build output directly to out directory
+cp -r dist out
 
-chmod +x out/index.js
 node scripts/after-bundle.js
