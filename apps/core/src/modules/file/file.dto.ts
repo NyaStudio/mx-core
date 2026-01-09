@@ -12,6 +12,10 @@ export class FileDeleteQueryDto {
   @IsOptional()
   @IsIn(['local', 's3'])
   storage?: 'local' | 's3'
+
+  @IsOptional()
+  @IsString()
+  url?: string
 }
 
 export class FileUploadDto {

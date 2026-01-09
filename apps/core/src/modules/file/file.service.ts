@@ -177,10 +177,15 @@ export class FileService {
     await fs.writeFile(filePath, buffer)
   }
 
-  async deleteFile(type: FileType, name: string, storage?: 'local' | 's3') {
+  async deleteFile(
+    type: FileType,
+    name: string,
+    storage?: 'local' | 's3',
+    url?: string,
+  ) {
     try {
       if (storage === 's3') {
-        await this.deleteFileFromS3(name)
+        await this.deleteFileFromS3(url)
       } else {
         const path = this.resolveFilePath(type, name)
         await fs.copyFile(path, resolve(STATIC_FILE_TRASH_DIR, name))
@@ -193,7 +198,11 @@ export class FileService {
     }
   }
 
-  async deleteFileFromS3(filename: string): Promise<void> {
+  async deleteFileFromS3(fileUrl?: string): Promise<void> {
+    if (!fileUrl) {
+      throw new BadRequestException('删除 S3 文件需要提供 URL')
+    }
+
     const { imageBedOptions, s3Options } =
       await this.configService.waitForConfigReady()
 
@@ -215,15 +224,19 @@ export class FileService {
       endpoint,
     })
 
-    const pathTemplate = imageBedOptions.path || 'images/{Y}/{m}/{uuid}.{ext}'
-    const remotePath = parsePlaceholder(pathTemplate, {
-      filename,
-    })
+    let objectKey: string
+    try {
+      const urlObj = new URL(fileUrl)
+      objectKey = urlObj.pathname.replace(/^\//, '') // 移除开头的斜杠
+    } catch (error) {
+      this.logger.error('解析 S3 URL 失败', error)
+      throw new BadRequestException(`无效的 S3 URL: ${fileUrl}`)
+    }
 
     try {
-      this.logger.log(`Deleting from S3: ${remotePath}`)
-      await s3.deleteFromS3(remotePath)
-      this.logger.log(`Successfully deleted from S3: ${remotePath}`)
+      this.logger.log(`Deleting from S3: ${objectKey}`)
+      await s3.deleteFromS3(objectKey)
+      this.logger.log(`Successfully deleted from S3: ${objectKey}`)
     } catch (error) {
       this.logger.error('Failed to delete from S3', error)
       throw new InternalServerErrorException(

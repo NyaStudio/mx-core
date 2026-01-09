@@ -142,8 +142,8 @@ export class FileController {
     @Query() query: FileDeleteQueryDto,
   ) {
     const { type, name } = params
-    const { storage } = query
-    await this.service.deleteFile(type, name, storage)
+    const { storage, url } = query
+    await this.service.deleteFile(type, name, storage, url)
   }
 
   @Auth()
