@@ -48,6 +48,7 @@
     "changelog": true
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.12",
     "@ai-sdk/openai": "2.0.89",
     "@algolia/client-search": "^4.22.1",
     "@babel/core": "7.28.5",
