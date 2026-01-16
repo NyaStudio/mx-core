@@ -5,7 +5,10 @@ import { BizException } from '~/common/exceptions/biz.exception'
 import { ErrorCodeEnum } from '~/constants/error-code.constant'
 import { generateText } from 'ai'
 import { ConfigsService } from '../configs/configs.service'
-import { createLanguageModel } from './ai-provider.factory'
+import {
+  createLanguageModel,
+  normalizeOpenAIEndpoint,
+} from './ai-provider.factory'
 import { AIProviderType } from './ai.types'
 
 // 用于临时测试获取模型列表的 DTO
@@ -276,16 +279,6 @@ export class AiController {
     }
   }
 
-  private normalizeEndpoint(endpoint: string): string {
-    // 移除末尾斜杠
-    let normalized = endpoint.replace(/\/+$/, '')
-    // 如果没有 /v1 后缀，添加它（对于 OpenAI 兼容服务）
-    if (!normalized.endsWith('/v1')) {
-      normalized = `${normalized}/v1`
-    }
-    return normalized
-  }
-
   private async fetchModelsForProvider(provider: {
     id: string
     type: AIProviderType
@@ -305,12 +298,12 @@ export class AiController {
         if (provider.type === AIProviderType.OpenAI) {
           // OpenAI 官方
           baseURL = provider.endpoint
-            ? this.normalizeEndpoint(provider.endpoint)
+            ? normalizeOpenAIEndpoint(provider.endpoint)
             : 'https://api.openai.com/v1'
         } else if (provider.type === AIProviderType.OpenRouter) {
           // OpenRouter
           baseURL = provider.endpoint
-            ? this.normalizeEndpoint(provider.endpoint)
+            ? normalizeOpenAIEndpoint(provider.endpoint)
             : 'https://openrouter.ai/api/v1'
         } else {
           // OpenAI 兼容服务
@@ -319,7 +312,7 @@ export class AiController {
               'Endpoint is required for OpenAI-compatible provider',
             )
           }
-          baseURL = this.normalizeEndpoint(provider.endpoint)
+          baseURL = normalizeOpenAIEndpoint(provider.endpoint)
         }
 
         const controller = new AbortController()
