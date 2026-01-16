@@ -1,5 +1,37 @@
 # CHANGELOG
 
+# [8.6.0](https://github.com/mx-space/core/compare/v8.5.1...v8.6.0) (2026-01-15)
+
+
+### Bug Fixes
+
+* **backup:** 修复 S3 备份上传错误 ([#2524](https://github.com/mx-space/core/issues/2524)) ([43cbdc8](https://github.com/mx-space/core/commit/43cbdc8729083778f70321d69bcbb2839f0f746b))
+* **render:** 修复渲染预览类型路由匹配 ([#2523](https://github.com/mx-space/core/issues/2523)) ([d82f8ff](https://github.com/mx-space/core/commit/d82f8ff8f4d67577b025eff7304f3f06a7b8f96d))
+* update mongo image to version 7 in docker-compose.yml ([#2474](https://github.com/mx-space/core/issues/2474)) ([03b5105](https://github.com/mx-space/core/commit/03b51056ac15358c33e4f78a3a9fae7345319615))
+
+
+### Features
+
+* **core:** refactor admin asset download logic with multi-mirror support and improved reliability ([d77a152](https://github.com/mx-space/core/commit/d77a152bc8a60a185ab8a1f2ad2269bfc03ce986))
+
+
+
+## [8.5.1](https://github.com/mx-space/core/compare/v8.5.0...v8.5.1) (2026-01-14)
+
+
+### Bug Fixes
+
+* build mod script ([800c0cb](https://github.com/mx-space/core/commit/800c0cb5f3924b91ce02c0e29f2c3ec47f1addba))
+* **deps:** update dependency ua-parser-js to v2.0.7 ([#2509](https://github.com/mx-space/core/issues/2509)) ([d021823](https://github.com/mx-space/core/commit/d021823d0700f5a9e58b3d893bc28fc546ac0adf))
+
+
+### Features
+
+* **auth:** add profile mapping function to GitHub authentication ([f7d96c3](https://github.com/mx-space/core/commit/f7d96c3152074507f0d4da4704d38c5ceda7caf4))
+* **recently:** 新增速记编辑功能 ([#2521](https://github.com/mx-space/core/issues/2521)) ([99043bd](https://github.com/mx-space/core/commit/99043bd94c07a7a1c1b96dbad21b1f8f4e58a430))
+
+
+
 # [8.5.0](https://github.com/mx-space/core/compare/v8.4.5...v8.5.0) (2026-01-12)
 
 
