@@ -20,7 +20,7 @@ export interface AIProviderConfig {
   type: AIProviderType
   /** API key */
   apiKey: string
-  /** Custom endpoint (required for OpenAI-compatible) */
+  /** Custom endpoint (required for OpenAI-compatible, optional for others) */
   endpoint?: string
   /** Default model name */
   defaultModel: string

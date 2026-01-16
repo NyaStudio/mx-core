@@ -49,9 +49,13 @@ export function createLanguageModel(
     }
 
     case AIProviderType.Anthropic:
+      // Anthropic API 使用 /v1/messages 端点
+      // 支持自定义 endpoint 以兼容 one-api/new-api 等聚合服务
       return createAnthropic({
         apiKey: config.apiKey,
-        baseURL: config.endpoint || undefined,
+        baseURL: config.endpoint
+          ? normalizeOpenAIEndpoint(config.endpoint)
+          : undefined,
       })(modelName)
 
     case AIProviderType.OpenRouter:
