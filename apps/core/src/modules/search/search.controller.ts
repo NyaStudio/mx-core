@@ -21,7 +21,6 @@ export class SearchController {
 
   @Get('/')
   @HttpCache.disable
-  @HTTPDecorators.Paginator
   async searchWithMeili(@Query() query: SearchDto) {
     return this.searchService.searchWithMeili(query)
   }
