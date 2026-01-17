@@ -161,6 +161,11 @@ declare -A valueMap=(
   [REDIS_PORT]="value,--redis_port=,6379"
   [REDIS_PASSWORD]="value,--redis_password=,@@NULL@@"
   [DISABLE_CACHE]="switch,--disable_cache,false"
+
+  # MeiliSearch
+  [MEILI_HOST]="value,--meili_host=,127.0.0.1"
+  [MEILI_PORT]="value,--meili_port=,7700"
+  [MEILI_MASTER_KEY]="value,--meili_master_key=,@@NULL@@"
  
   # JWT
   [JWT_SECRET]="value,--jwt_secret=,@@NULL@@"
