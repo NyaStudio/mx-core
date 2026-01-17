@@ -22,6 +22,7 @@ import { BACKUP_DIR, DATA_DIR } from '~/constants/path.constant'
 import { migrateDatabase } from '~/migration/migrate'
 import { EventManagerService } from '~/processors/helper/helper.event.service'
 import { RedisService } from '~/processors/redis/redis.service'
+import { parsePlaceholder } from '~/utils/path-placeholder.util'
 import { S3Uploader } from '~/utils/s3.util'
 import { scheduleManager } from '~/utils/schedule.util'
 import { getFolderSize, installPKG } from '~/utils/system.util'
@@ -315,7 +316,6 @@ export class BackupService {
         s3.setCustomDomain(s3Options.customDomain)
       }
 
-      const { parsePlaceholder } = await import('~/utils/path-placeholder.util')
       const localFilename = backup.path.slice(backup.path.lastIndexOf('/') + 1)
       const remotePath = backupOptions.path || 'backups/{Y}/{m}/{filename}'
       const remoteFileKey = parsePlaceholder(remotePath, {
